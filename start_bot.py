@@ -39,7 +39,13 @@ def show_help(message):
 def bot_answer(message):
     global tries
     text = message.text
-    if len(text) == 4 and text.isnumeric() and len(text) == len(set(text)):
+    if tries == -1:
+        if text == 'Так':
+            start_game(message)
+            return
+        else:
+            response = 'Для запуска гри набери /start'
+    elif len(text) == 4 and text.isnumeric() and len(text) == len(set(text)):
         bulls, cows = get_bulls_cows(text, guessed_number)
         tries += 1
         if bulls != 4:
