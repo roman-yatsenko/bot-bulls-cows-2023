@@ -1,19 +1,17 @@
 import random
+import shelve
 import string
 
 import telebot
 
-from config import BOT_TOKEN
+from config import BOT_TOKEN, DB_NAME
 
 bot = telebot.TeleBot(BOT_TOKEN)
-guessed_number = ''
-tries = -1 # tries == -1, якщо гра не активна
 
 
 @bot.message_handler(commands=['start', 'game'])
 def start_game(message):
     digits = [s for s in string.digits]
-    global guessed_number, tries
     guessed_number = ''
     for pos in range(4):
         if pos:
@@ -22,8 +20,9 @@ def start_game(message):
             digit = random.choice(digits[1:])
         guessed_number += digit
         digits.remove(digit)
-    print(guessed_number)
-    tries = 0
+    print(f'{guessed_number} for {message.from_user.username}')
+    with shelve.open(DB_NAME) as storage:
+        storage[str(message.from_user.id)] = (guessed_number, 0)
     bot.reply_to(message, 'Гра "Бики та корови"\n'
         f'Я загадав 4-значне число. Спробуй відгадати, {message.from_user.first_name}!')
 
@@ -37,26 +36,31 @@ def show_help(message):
 
 @bot.message_handler(content_types=['text'])
 def bot_answer(message):
-    global tries
     text = message.text
-    if tries == -1:
+    try:
+        with shelve.open(DB_NAME) as storage:
+            guessed_number, tries = storage[str(message.from_user.id)]
+        if len(text) == 4 and text.isnumeric() and len(text) == len(set(text)):
+            bulls, cows = get_bulls_cows(text, guessed_number)
+            tries += 1
+            if bulls != 4:
+                response = f'Бики: {bulls} | Корови: {cows} ({tries} спроба)'
+                with shelve.open(DB_NAME) as storage:
+                    storage[str(message.from_user.id)] = (guessed_number, tries)
+            else:
+                response = f'Ти вгадав за {tries} спроб! Зіграємо ще?'
+                with shelve.open(DB_NAME) as storage:
+                    del storage[str(message.from_user.id)]
+                bot.send_message(message.from_user.id, response, reply_markup=get_restart_buttons())
+                return
+        else:
+            response = 'Надішли мені 4-значне число з різними цифрами!'
+    except KeyError:
         if text == 'Так':
             start_game(message)
             return
         else:
             response = 'Для запуска гри набери /start'
-    elif len(text) == 4 and text.isnumeric() and len(text) == len(set(text)):
-        bulls, cows = get_bulls_cows(text, guessed_number)
-        tries += 1
-        if bulls != 4:
-            response = f'Бики: {bulls} | Корови: {cows} ({tries} спроба)'
-        else:
-            response = f'Ти вгадав за {tries} спроб! Зіграємо ще?'
-            bot.send_message(message.from_user.id, response, reply_markup=get_restart_buttons())
-            tries = -1
-            return
-    else:
-        response = 'Надішли мені 4-значне число з різними цифрами!'
     bot.send_message(message.from_user.id, response)
 
 def get_restart_buttons():
