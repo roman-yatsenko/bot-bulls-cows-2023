@@ -21,7 +21,7 @@ def start_game(message):
             digit = random.choice(digits[1:])
         guessed_number += digit
         digits.remove(digit)
-    bot.reply_to(message, guessed_number)
+    bot.reply_to(message, f'Я загадав 4-значне число. Спробуй відгадати, {message.from_user.first_name}!')
 
 
 if __name__ == '__main__':
