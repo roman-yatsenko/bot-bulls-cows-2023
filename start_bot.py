@@ -7,12 +7,13 @@ from config import BOT_TOKEN
 
 bot = telebot.TeleBot(BOT_TOKEN)
 guessed_number = ''
+tries = 0
 
 
 @bot.message_handler(commands=['start', 'game'])
 def start_game(message):
     digits = [s for s in string.digits]
-    global guessed_number
+    global guessed_number, tries
     guessed_number = ''
     for pos in range(4):
         if pos:
@@ -22,6 +23,7 @@ def start_game(message):
         guessed_number += digit
         digits.remove(digit)
     print(guessed_number)
+    tries = 0
     bot.reply_to(message, 'Гра "Бики та корови"\n'
         f'Я загадав 4-значне число. Спробуй відгадати, {message.from_user.first_name}!')
 
@@ -35,13 +37,15 @@ def show_help(message):
 
 @bot.message_handler(content_types=['text'])
 def bot_answer(message):
+    global tries
     text = message.text
     if len(text) == 4 and text.isnumeric() and len(text) == len(set(text)):
         bulls, cows = get_bulls_cows(text, guessed_number)
+        tries += 1
         if bulls != 4:
-            response = f'Бики: {bulls} | Корови: {cows}'
+            response = f'Бики: {bulls} | Корови: {cows} ({tries} спроба)'
         else:
-            response = 'Ти вгадав! Надішли /game для нової гри :-)'
+            response = f'Ти вгадав за {tries} спроб! Надішли /game для нової гри :-)'
     else:
         response = 'Надішли мені 4-значне число з різними цифрами!'
     bot.send_message(message.from_user.id, response)
