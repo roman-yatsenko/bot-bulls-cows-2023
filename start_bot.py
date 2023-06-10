@@ -22,14 +22,18 @@ def start_game(message):
         guessed_number += digit
         digits.remove(digit)
     print(guessed_number)
-    bot.reply_to(message, f'Я загадав 4-значне число. Спробуй відгадати, {message.from_user.first_name}!')
+    bot.reply_to(message, 'Гра "Бики та корови"\n'
+        f'Я загадав 4-значне число. Спробуй відгадати, {message.from_user.first_name}!')
 
 @bot.message_handler(content_types=['text'])
 def bot_answer(message):
     text = message.text
     if len(text) == 4 and text.isnumeric() and len(text) == len(set(text)):
         bulls, cows = get_bulls_cows(text, guessed_number)
-        response = f'Бики: {bulls} | Корови: {cows}'
+        if bulls != 4:
+            response = f'Бики: {bulls} | Корови: {cows}'
+        else:
+            response = 'Ти вгадав! Надішли /game для нової гри :-)'
     else:
         response = 'Надішли мені 4-значне число з різними цифрами!'
     bot.send_message(message.from_user.id, response)
