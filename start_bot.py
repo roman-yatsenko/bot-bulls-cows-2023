@@ -27,11 +27,11 @@ def start_game(message):
 @bot.message_handler(content_types=['text'])
 def bot_answer(message):
     text = message.text
-    if len(text) == 4 and text.isnumeric():
+    if len(text) == 4 and text.isnumeric() and len(text) == len(set(text)):
         bulls, cows = get_bulls_cows(text, guessed_number)
         response = f'Бики: {bulls} | Корови: {cows}'
     else:
-        response = 'Надішли мені 4-значне число!'
+        response = 'Надішли мені 4-значне число з різними цифрами!'
     bot.send_message(message.from_user.id, response)
 
 def get_bulls_cows(text1, text2):
