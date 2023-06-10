@@ -25,6 +25,14 @@ def start_game(message):
     bot.reply_to(message, 'Гра "Бики та корови"\n'
         f'Я загадав 4-значне число. Спробуй відгадати, {message.from_user.first_name}!')
 
+@bot.message_handler(commands=['help'])
+def show_help(message):
+    bot.reply_to(message, """
+Гра "Бики та корови"
+
+Гра, в якій потрібно за декілька спроб вгадати 4-значне число, яке загадав бот. Після кожної спроби бот повідомляя кількість вгаданих цифр, ще не на "своїх" місцях ("корови"), та повних цифрових співпадінь ("бики")
+""")
+
 @bot.message_handler(content_types=['text'])
 def bot_answer(message):
     text = message.text
