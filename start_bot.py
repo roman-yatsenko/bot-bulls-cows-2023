@@ -7,7 +7,7 @@ from config import BOT_TOKEN
 
 bot = telebot.TeleBot(BOT_TOKEN)
 guessed_number = ''
-tries = 0
+tries = -1 # tries == -1, якщо гра не активна
 
 
 @bot.message_handler(commands=['start', 'game'])
@@ -45,10 +45,21 @@ def bot_answer(message):
         if bulls != 4:
             response = f'Бики: {bulls} | Корови: {cows} ({tries} спроба)'
         else:
-            response = f'Ти вгадав за {tries} спроб! Надішли /game для нової гри :-)'
+            response = f'Ти вгадав за {tries} спроб! Зіграємо ще?'
+            bot.send_message(message.from_user.id, response, reply_markup=get_restart_buttons())
+            tries = -1
+            return
     else:
         response = 'Надішли мені 4-значне число з різними цифрами!'
     bot.send_message(message.from_user.id, response)
+
+def get_restart_buttons():
+    buttons = telebot.types.ReplyKeyboardMarkup(
+        one_time_keyboard=True,
+        resize_keyboard=True,
+    )
+    buttons.add('Так', 'Ні')
+    return buttons
 
 def get_bulls_cows(text1, text2):
     bulls = cows = 0
