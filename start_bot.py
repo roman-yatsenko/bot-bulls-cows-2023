@@ -23,7 +23,16 @@ def start_game(message):
         digits.remove(digit)
     bot.reply_to(message, f'Я загадав 4-значне число. Спробуй відгадати, {message.from_user.first_name}!')
 
+@bot.message_handler(content_types=['text'])
+def bot_answer(message):
+    text = message.text
+    if len(text) == 4 and text.isnumeric():
+        response = text
+    else:
+        response = 'Надішли мені 4-значне число!'
+    bot.send_message(message.from_user.id, response)
 
+    
 if __name__ == '__main__':
     print('Bot works!')
     bot.polling(non_stop=True)
