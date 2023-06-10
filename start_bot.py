@@ -10,6 +10,20 @@ bot = telebot.TeleBot(BOT_TOKEN)
 
 
 @bot.message_handler(commands=['start', 'game'])
+def select_level(message):
+    response = 'Гра "Бики та корови"\n' + \
+               'Обери рівень (кількість цифр)'
+    bot.send_message(message.from_user.id, response, reply_markup=get_level_buttons())
+
+def get_level_buttons():
+    buttons = telebot.types.ReplyKeyboardMarkup(
+        one_time_keyboard=True,
+        resize_keyboard=True,
+    )
+    buttons.add('3', '4', '5')
+    return buttons
+
+
 def start_game(message):
     digits = [s for s in string.digits]
     guessed_number = ''
@@ -56,8 +70,11 @@ def bot_answer(message):
         else:
             response = 'Надішли мені 4-значне число з різними цифрами!'
     except KeyError:
-        if text == 'Так':
+        if text in ('3', '4', '5'):
             start_game(message)
+            return
+        elif text == 'Так':
+            select_level(message)
             return
         else:
             response = 'Для запуска гри набери /start'
