@@ -24,10 +24,10 @@ def get_level_buttons():
     return buttons
 
 
-def start_game(message):
+def start_game(message, level):
     digits = [s for s in string.digits]
     guessed_number = ''
-    for pos in range(4):
+    for pos in range(level):
         if pos:
             digit = random.choice(digits)
         else:
@@ -38,7 +38,7 @@ def start_game(message):
     with shelve.open(DB_NAME) as storage:
         storage[str(message.from_user.id)] = (guessed_number, 0)
     bot.reply_to(message, 'Гра "Бики та корови"\n'
-        f'Я загадав 4-значне число. Спробуй відгадати, {message.from_user.first_name}!')
+        f'Я загадав {level}-значне число. Спробуй відгадати, {message.from_user.first_name}!')
 
 @bot.message_handler(commands=['help'])
 def show_help(message):
@@ -54,10 +54,11 @@ def bot_answer(message):
     try:
         with shelve.open(DB_NAME) as storage:
             guessed_number, tries = storage[str(message.from_user.id)]
-        if len(text) == 4 and text.isnumeric() and len(text) == len(set(text)):
+        level = len(guessed_number)
+        if len(text) == level and text.isnumeric() and len(text) == len(set(text)):
             bulls, cows = get_bulls_cows(text, guessed_number)
             tries += 1
-            if bulls != 4:
+            if bulls != level:
                 response = f'Бики: {bulls} | Корови: {cows} ({tries} спроба)'
                 with shelve.open(DB_NAME) as storage:
                     storage[str(message.from_user.id)] = (guessed_number, tries)
@@ -68,10 +69,10 @@ def bot_answer(message):
                 bot.send_message(message.from_user.id, response, reply_markup=get_restart_buttons())
                 return
         else:
-            response = 'Надішли мені 4-значне число з різними цифрами!'
+            response = f'Надішли мені {level}-значне число з різними цифрами!'
     except KeyError:
         if text in ('3', '4', '5'):
-            start_game(message)
+            start_game(message, int(text))
             return
         elif text == 'Так':
             select_level(message)
@@ -90,7 +91,7 @@ def get_restart_buttons():
 
 def get_bulls_cows(text1, text2):
     bulls = cows = 0
-    for i in range(4):
+    for i in range(min(len(text1), len(text2))):
         if text1[i] in text2:
             if text1[i] == text2[i]:
                 bulls += 1
