@@ -28,10 +28,13 @@ def get_level_buttons():
     return buttons
 
 @bot.message_handler(commands=['start', 'game'])
-def start_game(message, level=DEFAULT_USER_LEVEL):
+def start_game(message, level=None):
+    user = get_or_create_user(message.from_user.id)
+    if level:
+        user.level = level
     digits = [s for s in string.digits]
     guessed_number = ''
-    for pos in range(level):
+    for pos in range(user.level):
         if pos:
             digit = random.choice(digits)
         else:
@@ -39,12 +42,10 @@ def start_game(message, level=DEFAULT_USER_LEVEL):
         guessed_number += digit
         digits.remove(digit)
     print(f'{guessed_number} for {message.from_user.username}')
-    user = get_or_create_user(message.from_user.id)
-    user.level = level
     user.reset(guessed_number)
     save_user(message.from_user.id, user)
     bot.reply_to(message, 'Гра "Бики та корови"\n'
-        f'Я загадав {level}-значне число. Спробуй відгадати, {message.from_user.first_name}!')
+        f'Я загадав {user.level}-значне число. Спробуй відгадати, {message.from_user.first_name}!')
 
 @bot.message_handler(commands=['help'])
 def show_help(message):
