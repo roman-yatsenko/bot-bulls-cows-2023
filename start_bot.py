@@ -1,5 +1,6 @@
 import random
 import string
+from itertools import product
 
 import telebot
 
@@ -21,6 +22,7 @@ def select_mode(message):
 @bot.message_handler(commands=['level'])
 def select_level(message):
     user = get_or_create_user(message.from_user.id)
+    user.level = None
     user.reset()
     save_user(message.from_user.id, user)
     response = 'Гра "Бики та корови"\n' + \
@@ -35,20 +37,25 @@ def start_game(message, level=None):
         return
     if level:
         user.level = level
-    digits = [s for s in string.digits]
-    guessed_number = ''
-    for pos in range(user.level):
-        if pos:
-            digit = random.choice(digits)
-        else:
-            digit = random.choice(digits[1:])
-        guessed_number += digit
-        digits.remove(digit)
-    print(f'{guessed_number} for {message.from_user.username}')
-    user.reset(guessed_number)
-    save_user(message.from_user.id, user)
-    bot.reply_to(message, 'Гра "Бики та корови"\n'
-        f'Я загадав {user.level}-значне число. Спробуй відгадати, {message.from_user.first_name}!')
+    if user.mode == 'bot':
+        digits = [s for s in string.digits]
+        guessed_number = ''
+        for pos in range(user.level):
+            if pos:
+                digit = random.choice(digits)
+            else:
+                digit = random.choice(digits[1:])
+            guessed_number += digit
+            digits.remove(digit)
+        print(f'{guessed_number} for {message.from_user.username}')
+        user.reset(guessed_number)
+        save_user(message.from_user.id, user)
+        bot.reply_to(message, 'Гра "Бики та корови"\n'
+            f'Я загадав {user.level}-значне число. Спробуй відгадати, {message.from_user.first_name}!')
+    elif user.mode == 'user':
+        bot.reply_to(message, 'Гра "Бики та корови"\n'
+            f'Загадай {user.level}-значне число. Я спробую його відгадати, а ти надсилай мені кількість биків та корів!')
+        bot_answer_with_guess(message, user)
 
 @bot.message_handler(commands=['help'])
 def show_help(message):
@@ -61,8 +68,10 @@ def show_help(message):
 @bot.message_handler(content_types=['text'])
 def bot_answer(message):
     user = get_or_create_user(message.from_user.id)
-    if user.number:
+    if user.number and user.mode == 'bot':
         bot_answer_to_user_guess(message, user)
+    elif user.level and user.mode == 'user':
+        bot_answer_with_guess(message, user)
     else:
         bot_answer_not_in_game(message, user)
 
@@ -104,6 +113,18 @@ def bot_answer_to_user_guess(message, user):
     else:
         response = f'Надішли мені {user.level}-значне число з різними цифрами!'
     bot.send_message(message.from_user.id, response)
+
+def bot_answer_with_guess(message, user):
+    all_variants = [''.join(x) for x in product(string.digits, repeat=user.level)
+                    if len(x) == len(set(x)) and x[0] != '0']
+    guess = random.choice(all_variants)
+    keys = []
+    for bulls in range(user.level + 1):
+        for cows in range(user.level + 1 - bulls):
+            keys.append(f'{bulls}-{cows}')
+    response = f'Мій варіант {guess}\n' + \
+                'Скільки биків та корів я вгадав ?'
+    bot.send_message(message.from_user.id, response, reply_markup=get_buttons(*keys))
 
 def get_buttons(*args):
     buttons = telebot.types.ReplyKeyboardMarkup(
