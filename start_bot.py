@@ -118,6 +118,10 @@ def bot_answer_with_guess(message, user):
     history = list(user.history)
     if history:
         history[-1] = (history[-1][0], *[int(x) for x in message.text.split('-')])
+        if history[-1][1] == user.level:
+            response = 'Я вгадав :-)'
+            stop_game_with_response(message, user, response)
+            return
     all_variants = [''.join(x) for x in product(string.digits, repeat=user.level)
                     if len(x) == len(set(x)) and x[0] != '0']
     while all_variants:
@@ -126,10 +130,8 @@ def bot_answer_with_guess(message, user):
         if is_compatible(guess, history):
             break
     else:
-        response = 'На жаль, у твоїх відповідях була помилка, в мене більше немає варіантів :-(\nНадішли /start для нової гри'
-        user.reset()
-        save_user(message.from_user.id, user)
-        bot.send_message(message.from_user.id, response)
+        response = 'На жаль, у твоїх відповідях була помилка, в мене більше немає варіантів :-('
+        stop_game_with_response(message, user, response)
         return
     history.append((guess, None, None))
     user.history = tuple(history)
@@ -141,6 +143,11 @@ def bot_answer_with_guess(message, user):
     response = f'Мій варіант {guess}\n' + \
                 'Скільки биків та корів я вгадав ?'
     bot.send_message(message.from_user.id, response, reply_markup=get_buttons(*keys))
+
+def stop_game_with_response(message, user, response):
+    user.reset()
+    save_user(message.from_user.id, user)
+    bot.send_message(message.from_user.id, response + '\nНадішли /start для нової гри')
 
 def is_compatible(guess, history):
     return all(get_bulls_cows(guess, previous_guess) == (bulls, cows) 
