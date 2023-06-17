@@ -10,8 +10,11 @@ from user import User, DEFAULT_USER_LEVEL, get_or_create_user, save_user, del_us
 bot = telebot.TeleBot(BOT_TOKEN)
 
 
-@bot.message_handler(commands=['start', 'game'])
+@bot.message_handler(commands=['level'])
 def select_level(message):
+    user = get_or_create_user(message.from_user.id)
+    user.reset()
+    save_user(message.from_user.id, user)
     response = 'Гра "Бики та корови"\n' + \
                'Обери рівень (кількість цифр)'
     bot.send_message(message.from_user.id, response, reply_markup=get_level_buttons())
@@ -24,7 +27,8 @@ def get_level_buttons():
     buttons.add('3', '4', '5')
     return buttons
 
-def start_game(message, level):
+@bot.message_handler(commands=['start', 'game'])
+def start_game(message, level=DEFAULT_USER_LEVEL):
     digits = [s for s in string.digits]
     guessed_number = ''
     for pos in range(level):
@@ -74,7 +78,7 @@ def bot_answer(message):
             start_game(message, int(text))
             return
         elif text == 'Так':
-            select_level(message)
+            start_game(message, user.level)
             return
         else:
             response = 'Для запуску гри набери /start'
